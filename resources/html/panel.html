@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;font:12px/1.4 'Segoe UI',sans-serif;color:#E5E2E1}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center}
+#panel{background:#1A1A1A;color:#E5E2E1;width:680px;max-height:85vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
+#panel ::-webkit-scrollbar{width:6px}
+#panel ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+/* ── Header ── */
+.sttl{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #333;flex-shrink:0}
+.sttl span{font-size:15px;font-weight:600}
+.sttl button{width:28px;height:28px;border:none;background:0 0;color:#A0A0A0;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.sttl button:hover{background:#353535;color:#E5E2E1}
+
+/* ── Settings (unchanged) ── */
+.sgrp{padding:12px 20px;border-bottom:1px solid #333}
+.slbl{font-size:11px;text-transform:uppercase;color:#666;font-weight:600;margin-bottom:8px;letter-spacing:.5px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:6px 0;gap:12px}
+.srow label{font-size:13px;color:#E5E2E1}
+.srow select,.srow input[type=text]{background:#2A2A2A;border:1px solid #333;color:#E5E2E1;padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;outline:none;max-width:220px}
+.srow select:hover,.srow input[type=text]:hover{border-color:#666}
+.srow input[type=text]{width:220px}
+.stog{display:flex;align-items:center;gap:8px;cursor:pointer}
+.stog input{display:none}
+.stog .sl{width:36px;height:20px;background:#2A2A2A;border-radius:10px;position:relative;transition:.2s;flex-shrink:0}
+.stog .sl::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:#A0A0A0;border-radius:50%;transition:.2s}
+.stog input:checked+.sl{background:#7C4DFF}
+.stog input:checked+.sl::after{left:18px;background:#fff}
+.sbtn{background:#353535;border:none;color:#E5E2E1;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit}
+.sbtn:hover{background:#3F3F3F}
+.sbtn.danger{color:#FF5252}
+.sbtn.danger:hover{background:#3a1a1a}
+.sbtn.active{background:#7C4DFF;color:#fff}
+
+/* ── History layout ── */
+#hbody{display:flex;flex:1;overflow:hidden}
+#hside{width:150px;flex-shrink:0;border-right:1px solid #333;padding:12px 0;overflow-y:auto}
+#hside button{display:flex;align-items:center;width:100%;border:none;background:0 0;color:#A0A0A0;cursor:pointer;padding:8px 16px;font-size:12px;font-family:inherit;text-align:left;gap:8px;transition:.15s}
+#hside button:hover{color:#E5E2E1;background:#353535}
+#hside button.active{color:#7C4DFF;background:rgba(124,77,255,0.08);font-weight:600}
+#hside button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+#hside .hsep{height:1px;background:#333;margin:8px 12px}
+
+/* ── History content ── */
+#hmain{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#hsearch{padding:10px 16px;border-bottom:1px solid #333;flex-shrink:0}
+#hsearch input{width:100%;height:30px;background:#2A2A2A;border:1px solid #333;border-radius:6px;color:#E5E2E1;font-size:12px;font-family:inherit;padding:0 10px;outline:none;transition:border-color .15s}
+#hsearch input:focus{border-color:#7C4DFF}
+#hsearch input::placeholder{color:#666}
+#hlist{flex:1;overflow-y:auto;padding:4px 0}
+
+.hentry{display:flex;align-items:center;padding:7px 16px;cursor:pointer;gap:8px;transition:background .15s}
+.hentry:hover{background:#353535}
+.htitle{font-size:13px;color:#E5E2E1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.hurl{font-size:11px;color:#7C4DFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.htime{font-size:11px;color:#666;flex-shrink:0}
+.hgroup{padding:6px 16px 2px;font-size:11px;text-transform:uppercase;color:#666;font-weight:600;letter-spacing:.5px;border-top:1px solid #2A2A2A;margin-top:4px}
+.hgroup:first-child{border-top:none;margin-top:0}
+.hempty{text-align:center;color:#666;padding:60px 16px;font-size:13px}
+</style>
+</head>
+<body>
+<div id="overlay">
+  <div id="panel"></div>
+</div>
+<script>
+var _mode = null;
+var _historyData = [];
+var _activeFilter = 'today';
+var _searchText = '';
+
+function esc(t){return String(t).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];})}
+
+function showSettings(data){
+  _mode='settings';
+  var p=document.getElementById('panel');
+  p.innerHTML='<div class="sttl"><span>Настройки</span><button onclick="pc(\'settings\')">✕</button></div>'
+    +'<div class="sgrp"><div class="slbl">Поиск</div><div class="srow"><label>Поисковая система</label><select onchange="pc(\'setEngine:\'+this.value)">'
+    +'<option value="google"'+(data.engine==='google'?' selected':'')+'>Google</option>'
+    +'<option value="yandex"'+(data.engine==='yandex'?' selected':'')+'>Яндекс</option>'
+    +'<option value="bing"'+(data.engine==='bing'?' selected':'')+'>Bing</option>'
+    +'<option value="duckduckgo"'+(data.engine==='duckduckgo'?' selected':'')+'>DuckDuckGo</option>'
+    +'</select></div></div>'
+    +'<div class="sgrp"><div class="slbl">Домашняя страница</div><div class="srow"><label>URL</label><input type="text" value="'+esc(data.homePage||'')+'" onchange="pc(\'setHomepage:\'+this.value)"></div></div>'
+    +'<div class="sgrp"><div class="slbl">При запуске</div>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0"><input type="radio" name="startup" value="0"'+(data.startup==0?' checked':'')+' onchange="pc(\'setStartup:\'+this.value)"> Новая вкладка</label>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0"><input type="radio" name="startup" value="1"'+(data.startup==1?' checked':'')+' onchange="pc(\'setStartup:\'+this.value)"> Продолжить</label>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0"><input type="radio" name="startup" value="2"'+(data.startup==2?' checked':'')+' onchange="pc(\'setStartup:\'+this.value)"> Определённая страница</label>'
+    +'</div>'
+    +'<div class="sgrp"><div class="slbl">Конфиденциальность</div>'
+    +'<div class="srow"><label>Блокировка рекламы</label><label class="stog"><input type="checkbox"'+(data.adblock?' checked':'')+' onchange="pc(\'setAdblock:\'+(this.checked?1:0))"><span class="sl"></span></label></div>'
+    +'<div class="srow" style="margin-top:8px"><label>Очистить историю</label><button class="sbtn danger" onclick="if(confirm(\'Очистить историю просмотров?\'))pc(\'clearHistory\')">Очистить</button></div>'
+    +'<div class="srow"><label>Удалить закладки</label><button class="sbtn danger" onclick="if(confirm(\'Удалить все закладки?\'))pc(\'clearBookmarks\')">Удалить</button></div></div>'
+    +'<div class="sgrp"><div class="slbl">О браузере</div><div style="font-size:12px;color:#A0A0A0;line-height:1.6"><div><strong>AnCore Browser</strong> v1.0</div><div>WebView2 (Chromium)</div></div></div>'
+    +'<div class="sgrp"><div class="slbl">Горячие клавиши</div><div style="font-size:12px;color:#A0A0A0;line-height:2">'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+T</span> Новая вкладка<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+W</span> Закрыть вкладку<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+Tab</span> Следующая вкладка<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+Shift+Tab</span> Предыдущая вкладка<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+L</span> Строка адреса<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+F</span> Найти на странице<br>'
+    +'<span style="display:inline-block;min-width:120px">F3 / Shift+F3</span> Найти далее / ранее<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+= / Ctrl+-</span> Масштаб<br>'
+    +'<span style="display:inline-block;min-width:120px">Ctrl+0</span> Сброс масштаба<br>'
+    +'<span style="display:inline-block;min-width:120px">Alt+← / Alt+→</span> Назад / Вперёд<br>'
+    +'<span style="display:inline-block;min-width:120px">F5</span> Обновить<br>'
+    +'<span style="display:inline-block;min-width:120px">F11</span> Полный экран</div></div>';
+  document.getElementById('overlay').style.display='flex';
+}
+
+// ── Date helpers ──
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function pad(n){return n<10?'0'+n:''+n}
+
+function daysAgo(n){var d=new Date();d.setDate(d.getDate()-n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+
+function weekStart(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);d.setDate(diff);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+
+function monthStart(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-01'}
+
+function yearStart(){var d=new Date();return d.getFullYear()+'-01-01'}
+
+function matchesFilter(item,filter){
+  var d=item.date;
+  switch(filter){
+    case 'today':return d===todayStr();
+    case 'yesterday':return d===daysAgo(1);
+    case 'week':return d>=weekStart();
+    case 'month':return d>=monthStart();
+    case 'year':return d>=yearStart();
+    default:return true;
+  }
+}
+
+function matchesSearch(item,text){
+  if(!text)return true;
+  var q=text.toLowerCase();
+  return item.title.toLowerCase().indexOf(q)!==-1||item.url.toLowerCase().indexOf(q)!==-1;
+}
+
+function renderHistory(){
+  var c=document.getElementById('hlist');
+  if(!c)return;
+  var filtered=_historyData.filter(function(it){return matchesFilter(it,_activeFilter)&&matchesSearch(it,_searchText)});
+  if(filtered.length===0){
+    c.innerHTML='<div class="hempty">'+( _searchText ? 'Ничего не найдено' : 'История пуста' )+'</div>';
+    return;
+  }
+  var groups={};var today=todayStr();var y=daysAgo(1);
+  for(var i=0;i<filtered.length;i++){
+    var it=filtered[i];
+    var label;
+    if(it.date===today)label='Сегодня';
+    else if(it.date===y)label='Вчера';
+    else label=it.date;
+    if(!groups[label])groups[label]=[];
+    groups[label].push(it);
+  }
+  c.innerHTML='';
+  var keys=Object.keys(groups);
+  var sortKey=function(k){if(k==='Сегодня')return '0';if(k==='Вчера')return '1';return '2'+k};
+  keys.sort(function(a,b){return sortKey(a).localeCompare(sortKey(b))});
+  for(var gi=0;gi<keys.length;gi++){
+    var gn=keys[gi];var items=groups[gn];
+    var grp=document.createElement('div');grp.className='hgroup';grp.textContent=gn;c.appendChild(grp);
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      var el=document.createElement('div');el.className='hentry';
+      el.innerHTML='<div style="flex:1;min-width:0"><div class="htitle">'+esc(it.title)+'</div><div class="hurl">'+esc(it.url)+'</div></div><div class="htime">'+esc(it.time)+'</div>';
+      (function(u){el.onclick=function(){pc('nav:'+u);};})(it.url);
+      c.appendChild(el);
+    }
+  }
+}
+
+function setFilter(f){
+  _activeFilter=f;
+  document.querySelectorAll('#hside button').forEach(function(b){b.classList.toggle('active',b.dataset.filter===f)});
+  renderHistory();
+}
+
+function showHistory(){
+  _mode='history';
+  _searchText='';
+  _activeFilter=_activeFilter||'today';
+  var p=document.getElementById('panel');
+  p.innerHTML='<div class="sttl"><span>История</span><button onclick="pc(\'showHistory\')">✕</button></div>'
+    +'<div id="hbody">'
+    +'<div id="hside">'
+    +'<button data-filter="today" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> За день</button>'
+    +'<button data-filter="yesterday"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Вчера</button>'
+    +'<button data-filter="week"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> За неделю</button>'
+    +'<button data-filter="month"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> За месяц</button>'
+    +'<button data-filter="year"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> За год</button>'
+    +'<div class="hsep"></div>'
+    +'<button class="sbtn danger" style="margin:0 12px;width:auto;justify-content:center" onclick="if(confirm(\'Очистить историю просмотров?\'))pc(\'clearHistory\')">Очистить</button>'
+    +'</div>'
+    +'<div id="hmain">'
+    +'<div id="hsearch"><input type="text" id="hsearchinp" placeholder="Поиск в истории…" spellcheck="false"></div>'
+    +'<div id="hlist" style="flex:1;overflow-y:auto"><div class="hempty">Загрузка...</div></div>'
+    +'</div>'
+    +'</div>';
+  document.getElementById('overlay').style.display='flex';
+
+  // Sidebar filter click
+  document.querySelectorAll('#hside button[data-filter]').forEach(function(b){
+    b.addEventListener('click',function(){setFilter(this.dataset.filter)});
+  });
+
+  // Search input
+  var sinp=document.getElementById('hsearchinp');
+  var stimer=null;
+  sinp.addEventListener('input',function(){
+    clearTimeout(stimer);
+    stimer=setTimeout(function(){
+      _searchText=sinp.value;
+      renderHistory();
+    },200);
+  });
+
+  setFilter(_activeFilter);
+  pc('getHistory');
+}
+
+function renderHistoryData(data){
+  _historyData=data||[];
+  renderHistory();
+}
+
+function closePanel(){
+  document.getElementById('overlay').style.display='none';
+  if(_mode==='settings')pc('settings');
+  else if(_mode==='history')pc('showHistory');
+  _mode=null;
+}
+
+function pc(m){window.chrome.webview.postMessage(m);}
+
+window.chrome.webview.addEventListener('message',function(e){
+  var d=e.data;
+  if(typeof d!=='string')return;
+  if(d==='__ancore__hide'){document.getElementById('overlay').style.display='none';return;}
+  if(d.indexOf('__ancore__settings')===0){try{var data=JSON.parse(d.substring(18));showSettings(data);}catch(x){}return;}
+  if(d==='__ancore__history'){showHistory();return;}
+  if(d.indexOf('__ancore__historyData')===0){try{var hd=JSON.parse(d.substring(21));renderHistoryData(hd);}catch(x){}return;}
+});
+
+document.getElementById('overlay').addEventListener('click',function(e){
+  if(e.target===this)closePanel();
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('overlay').style.display==='flex'){
+    e.preventDefault();closePanel();
+  }
+});
+</script>
+</body>
+</html>

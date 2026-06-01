@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Tab</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+    background: #0F0F0F;
+    color: #E5E2E1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 80px;
+    min-height: 100vh;
+}
+.logo {
+    font-size: 36px;
+    font-weight: 700;
+    color: #E5E2E1;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+.logo span { color: #7C4DFF; }
+.tagline {
+    color: #A0A0A0;
+    font-size: 14px;
+    margin-bottom: 40px;
+}
+.search-container {
+    width: 100%;
+    max-width: 600px;
+    padding: 0 20px;
+}
+.search-box {
+    display: flex;
+    background: #2A2A2A;
+    border: 1px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box:focus-within {
+    border-color: #7C4DFF;
+    box-shadow: 0 0 0 2px rgba(124,77,255,0.2);
+}
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-family: inherit;
+    background: transparent;
+    color: #E5E2E1;
+}
+.search-box input::placeholder { color: #666; }
+.search-box button {
+    background: none;
+    border: none;
+    padding: 0 20px;
+    cursor: pointer;
+    color: #7C4DFF;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.search-box button:hover { opacity: 1; }
+.quick-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 50px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 600px;
+}
+.quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #A0A0A0;
+    padding: 16px 20px;
+    border-radius: 12px;
+    transition: background 0.2s;
+    min-width: 80px;
+}
+.quick-link:hover { background: #1A1A1A; }
+.quick-link .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.quick-link .label { font-size: 12px; }
+.footer {
+    position: fixed;
+    bottom: 20px;
+    color: #444;
+    font-size: 12px;
+}
+</style>
+</head>
+<body>
+<div class="logo">An<span>Core</span></div>
+<div class="tagline">Your browser, your rules</div>
+<div class="search-container">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search or enter URL..." autofocus>
+        <button onclick="search()">→</button>
+    </div>
+</div>
+<div class="quick-links">
+    <a href="https://www.google.com" class="quick-link">
+        <div class="icon" style="background:#1A1A2E;color:#4285F4;">G</div>
+        <span class="label">Google</span>
+    </a>
+    <a href="https://www.youtube.com" class="quick-link">
+        <div class="icon" style="background:#2E1A1A;color:#FF0000;">▶</div>
+        <span class="label">YouTube</span>
+    </a>
+    <a href="https://github.com" class="quick-link">
+        <div class="icon" style="background:#1A1A1A;color:#CCC;">⌘</div>
+        <span class="label">GitHub</span>
+    </a>
+    <a href="https://ru.wikipedia.org" class="quick-link">
+        <div class="icon" style="background:#1A1A2E;color:#636466;">W</div>
+        <span class="label">Wikipedia</span>
+    </a>
+</div>
+<div class="footer">AnCore Browser v1.0</div>
+<script>
+function search() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (!q) return;
+    const hasDot = q.includes('.') && !q.includes(' ');
+    const url = hasDot ? 'https://' + q : 'https://www.google.com/search?q=' + encodeURIComponent(q);
+    window.location.href = url;
+}
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') search();
+});
+</script>
+</body>
+</html>

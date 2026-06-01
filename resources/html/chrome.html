@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AnCore</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0F0F0F;--surface:#1A1A1A;--overlay:#2A2A2A;
+  --accent:#7C4DFF;--txt:#E5E2E1;--txt2:#A0A0A0;--txt3:#666;
+  --border:#333;--hover:#353535;--press:#3F3F3F;
+  --tab-h:34px;--tool-h:40px;--tab-w:140px
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font:12px/1.4 'Segoe UI',sans-serif;user-select:none}
+#chrome{display:flex;flex-direction:column;height:100%}
+.sep{height:1px;background:var(--border);flex-shrink:0}
+
+/* ── Tab strip ── */
+#tabstrip{height:var(--tab-h);display:flex;align-items:stretch;background:var(--surface);flex-shrink:0;overflow:hidden}
+#tabs-wrap{display:flex;flex:1;overflow:hidden}
+#tabs{display:flex;align-items:stretch}
+.tab{display:flex;align-items:center;width:var(--tab-w);min-width:80px;flex-shrink:0;cursor:pointer;padding:0 24px 0 8px;position:relative}
+.tab.active{background:var(--bg);z-index:1}
+.tab.active::before{content:'';position:absolute;top:2px;left:4px;right:4px;height:2px;background:var(--accent);border-radius:1px;z-index:2}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--bg);z-index:1}
+.tab:not(.active):hover{background:var(--hover);border-radius:8px 8px 0 0}
+.tab:not(.active){border-right:1px solid var(--bg)}
+.tab .tt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--txt2);pointer-events:none}
+.tab.active .tt{color:var(--txt)}
+.tab .tc{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:none;background:0 0;color:var(--txt3);cursor:pointer;border-radius:3px;display:flex;align-items:center;justify-content:center;outline:none}
+.tab .tc:hover{color:var(--accent)}
+.tab.closing{opacity:0;width:0!important;min-width:0!important;padding:0;overflow:hidden;transition:opacity .2s ease,width .25s ease,min-width .25s ease,padding .25s ease;pointer-events:none}
+.tab.active.closing::before{display:none}
+.tab.active.closing::after{display:none}
+#newtab-btn{width:32px;min-width:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txt2);flex-shrink:0;border:none;background:0 0;outline:none}
+#newtab-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+#newtab-btn:hover{color:var(--txt)}
+#winbtns{display:flex;height:100%;flex-shrink:0}
+#winbtns button{width:46px;height:100%;border:none;background:0 0;color:var(--txt);cursor:pointer;outline:none;display:flex;align-items:center;justify-content:center;border-radius:0}
+#winbtns button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#winbtns button:hover{background:var(--hover)}
+#winbtns button.close:hover{background:#E81123}
+
+/* ── Toolbar area ── */
+#toolbar{height:var(--tool-h);display:flex;align-items:center;background:var(--bg);gap:2px;padding:0 4px;flex-shrink:0;position:relative}
+#toolbar::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--border);pointer-events:none}
+.nb{width:30px;height:30px;border:none;background:0 0;color:var(--txt);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;outline:none;flex-shrink:0}
+.nb:hover{background:var(--hover)}
+.nb svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#rlbtn{transition:transform .15s ease}
+#rlbtn:active{transform:rotate(90deg)}
+#urlbar{flex:1;height:28px;margin:0 4px;background:var(--overlay);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;padding:0 8px;min-width:0;transition:border-color .2s ease}
+#urlbar:focus-within{border-color:var(--accent)}
+#urlbar input{flex:1;height:100%;border:none;background:0 0;color:var(--txt);font-size:13px;font-family:inherit;outline:none;min-width:0}
+#urlbar input::placeholder{color:var(--txt3)}
+#secind{width:0;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .2s ease,margin-right .2s ease;opacity:0}
+#secind.show{width:18px;margin-right:4px;opacity:1}
+#secind svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+#bmb{width:30px;height:30px;border:none;background:0 0;color:var(--txt2);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;outline:none;flex-shrink:0}
+#bmb:hover{background:var(--hover);color:var(--txt)}
+#bmb.bm{color:var(--accent)}
+#bmb svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fi{width:16px;height:16px;border-radius:2px;flex-shrink:0;margin-right:4px}
+#zoomdisp{width:36px;text-align:center;font-size:11px;color:var(--txt3);flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* ── Find bar ── */
+#findbar{display:none;height:32px;flex-shrink:0;background:var(--surface);align-items:center;gap:4px;padding:0 8px;border-bottom:1px solid var(--border)}
+#findbar.show{display:flex}
+#findbar input{flex:1;height:22px;background:var(--overlay);border:1px solid var(--border);border-radius:4px;color:var(--txt);font-size:12px;font-family:inherit;padding:0 6px;outline:none}
+#findbar input:focus{border-color:var(--accent)}
+#findbar .fcount{font-size:11px;color:var(--txt3);min-width:40px;text-align:center}
+#findbar button{width:24px;height:22px;border:none;background:0 0;color:var(--txt2);cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#findbar button:hover{background:var(--hover);color:var(--txt)}
+#findbar .fclose:hover{color:#FF5252}
+
+.loader{height:2px;flex-shrink:0;background:rgba(124,77,255,0.15);position:relative;opacity:0;transition:opacity .25s ease}
+.loader.show{opacity:1}
+.loader::before{content:"";position:absolute;top:0;left:0;width:0;height:100%;background:#7C4DFF;border-radius:1px;animation:loadmove 1.2s ease-in-out infinite}
+@keyframes loadmove{50%{width:70%}100%{width:0;right:0;left:unset}}
+</style>
+</head>
+<body>
+<div id="chrome">
+  <div id="tabstrip">
+    <div id="tabs-wrap">
+      <div id="tabs"></div>
+      <button id="newtab-btn" data-act="addtab">
+        <svg viewBox="0 0 16 16"><line x1="3" y1="8" x2="13" y2="8"/><line x1="8" y1="3" x2="8" y2="13"/></svg>
+      </button>
+    </div>
+    <div id="winbtns">
+      <button class="min" data-act="min">
+        <svg viewBox="0 0 16 16"><line x1="3" y1="8" x2="13" y2="8"/></svg>
+      </button>
+      <button class="max" data-act="max">
+        <svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
+      </button>
+      <button class="close" data-act="close">
+        <svg viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="toolbar">
+    <button class="nb" data-act="back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="nb" data-act="fwd">
+      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="nb" id="rlbtn" data-act="reload">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+    <button class="nb" data-act="home">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <div id="urlbar">
+      <span id="secind">
+        <svg viewBox="0 0 24 24"></svg>
+      </span>
+      <input type="text" id="urlinp" placeholder="введите запрос или адрес" spellcheck="false" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){post('nav',this.value);this.blur()}"
+        onfocus="this.select()">
+    </div>
+    <span id="zoomdisp">100%</span>
+    <button class="nb" id="bmb" data-act="toggleBookmark">
+      <svg viewBox="0 0 24 24"><polygon points="19 21 12 17 5 21 5 3 19 3 19 21"/></svg>
+    </button>
+    <button class="nb" data-act="showHistory">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </button>
+    <button class="nb" data-act="settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div id="findbar">
+    <input type="text" id="findinp" placeholder="Найти на странице" spellcheck="false" autocomplete="off">
+    <span class="fcount" id="fcount"></span>
+    <button id="fprev">▲</button>
+    <button id="fnext">▼</button>
+    <button class="fclose" id="fclose">✕</button>
+  </div>
+  <div class="loader" id="loader"></div>
+  <div class="sep"></div>
+</div>
+
+<script>
+var _findText = '';
+var _findTimer = null;
+
+function post(cmd,val){
+  var s = val !== undefined ? cmd+':'+val : cmd;
+  window.chrome.webview.postMessage(s);
+}
+document.addEventListener('click',function(e){
+  var el = e.target.closest('[data-act]');
+  if(!el) return;
+  var a = el.getAttribute('data-act');
+  if(a==='addtab') post('addTab');
+  else if(a==='back') post('goBack');
+  else if(a==='fwd') post('goForward');
+  else if(a==='reload') post('reload');
+  else if(a==='home') post('goHome');
+  else if(a==='toggleBookmark') post('toggleBookmark');
+  else if(a==='settings') post('settings');
+  else if(a==='showHistory') post('showHistory');
+  else if(a==='min') post('min');
+  else if(a==='max') post('max');
+  else if(a==='close') post('close');
+});
+document.getElementById('tabs').addEventListener('click',function(e){
+  var tab = e.target.closest('.tab');
+  if(!tab) return;
+  var idx = parseInt(tab.getAttribute('data-idx'));
+  if(e.target.closest('.tc')){
+    tab.classList.add('closing');
+    var ndx = idx;
+    setTimeout(function(){ post('closeTab',ndx); }, 250);
+    return;
+  }
+  post('switchTab',idx);
+});
+document.getElementById('tabs').addEventListener('mousedown',function(e){
+  if(e.button!==1) return;
+  var tab = e.target.closest('.tab');
+  if(tab){
+    e.preventDefault();
+    tab.classList.add('closing');
+    var ndx = parseInt(tab.getAttribute('data-idx'));
+    setTimeout(function(){ post('closeTab',ndx); }, 250);
+  }
+});
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey && e.key==='f'){ e.preventDefault(); showFind(); }
+  if(e.key==='Escape'&&document.getElementById('findbar').classList.contains('show')){ e.preventDefault(); hideFind(); }
+  if(e.ctrlKey && e.key==='t'){ e.preventDefault(); post('addTab'); }
+  if(e.ctrlKey && e.key==='w'){ e.preventDefault(); var a=document.querySelector('.tab.active'); if(a){ a.classList.add('closing'); var ndx=parseInt(a.getAttribute('data-idx')); setTimeout(function(){ post('closeTab',ndx); },250); } }
+  if(e.ctrlKey && (e.key==='='||e.key==='+'||e.key==='Add')){ e.preventDefault(); post('zoomIn'); }
+  if(e.ctrlKey && (e.key==='-'||e.key==='_'||e.key==='Subtract')){ e.preventDefault(); post('zoomOut'); }
+  if(e.ctrlKey && e.key==='0'){ e.preventDefault(); post('zoomReset'); }
+  if(e.key==='F5'){ e.preventDefault(); post('reload'); }
+  if(e.key==='F11'){ e.preventDefault(); post('fullscreen'); }
+});
+document.getElementById('tabstrip').addEventListener('mousedown',function(e){
+  if(e.button===0 && !e.target.closest('.tab') && !e.target.closest('[data-act]')){
+    post('dragStart');
+  }
+});
+window.chrome.webview.addEventListener('message',function(e){
+  try {
+    var s = JSON.parse(e.data);
+    if(s.type!=='state') return;
+    render(s);
+  } catch(x){}
+});
+function render(s){
+  var c = document.getElementById('tabs');
+  c.innerHTML = '';
+  for(var i=0;i<s.tabs.length;i++){
+    var t = s.tabs[i];
+    var d = document.createElement('div');
+    d.className = 'tab'+(i===s.current?' active':'');
+    d.setAttribute('data-idx',i);
+    var fi = t.favicon ? '<img class="fi" src="'+esc(t.favicon)+'" alt="">' : '';
+    d.innerHTML = fi+'<span class="tt">'+esc(t.title||'New Tab')+'</span><span class="tc"><svg viewBox="0 0 16 16" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></span>';
+    c.appendChild(d);
+  }
+  var inp = document.getElementById('urlinp');
+  if(document.activeElement!==inp){
+    inp.value = (!s.url||s.url==='ancore:newtab'||s.url.indexOf('newtab.html')>-1)?'':s.url;
+  }
+  var si = document.getElementById('secind');
+  if(s.security===1){
+    si.className='show';
+    si.style.color='#4CAF50';
+    si.querySelector('svg').innerHTML='<path d="M12 2a7 7 0 0 0-7 7v2H4v11h16V11h-1V9a7 7 0 0 0-7-7z"/><polyline points="12 11 12 15"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
+  }else if(s.security===2){
+    si.className='show';
+    si.style.color='var(--txt3)';
+    si.querySelector('svg').innerHTML='<circle cx="12" cy="12" r="10"/><line x1="2" y1="2" x2="22" y2="22"/>';
+  }else{
+    si.className='';
+    si.style.color='var(--txt3)';
+    si.querySelector('svg').innerHTML='';
+  }
+  var rl = document.getElementById('rlbtn');
+  document.getElementById('loader').className = 'loader'+(s.loading?' show':'');
+  if(s.loading){
+    rl.innerHTML = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  } else {
+    rl.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
+  }
+  document.getElementById('bmb').className = 'nb'+(s.bookmarked?' bm':'');
+  var mb = document.querySelector('#winbtns .max');
+  if(s.maximized){
+    mb.innerHTML = '<svg viewBox="0 0 16 16"><rect x="4" y="6" width="8" height="8" rx="1"/><path d="M4 6V3h9v3"/></svg>';
+  } else {
+    mb.innerHTML = '<svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>';
+  }
+  document.getElementById('zoomdisp').textContent = (s.zoom||100)+'%';
+}
+
+function showFind(){
+  var fb = document.getElementById('findbar');
+  fb.classList.add('show');
+  var inp = document.getElementById('findinp');
+  inp.value = _findText;
+  inp.focus();
+  inp.select();
+}
+
+function hideFind(){
+  document.getElementById('findbar').classList.remove('show');
+  document.getElementById('fcount').textContent = '';
+  if (window.chrome && window.chrome.webview)
+    window.chrome.webview.postMessage('findClear');
+}
+
+function doFind(backward){
+  var text = document.getElementById('findinp').value;
+  if (!text) return;
+  _findText = text;
+  if (backward) post('findBack', text);
+  else post('find', text);
+}
+
+document.getElementById('findinp').addEventListener('input',function(){
+  clearTimeout(_findTimer);
+  _findTimer = setTimeout(function(){ doFind(false); }, 200);
+});
+document.getElementById('findinp').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){ e.preventDefault(); doFind(e.shiftKey); }
+});
+document.getElementById('fprev').addEventListener('click',function(){ doFind(true); });
+document.getElementById('fnext').addEventListener('click',function(){ doFind(false); });
+document.getElementById('fclose').addEventListener('click',hideFind);
+
+function esc(t){ return String(t).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+</script>
+</body>
+</html>

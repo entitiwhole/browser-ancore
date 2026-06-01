@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Заблокировано</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #fff5f5;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px;
+    text-align: center;
+}
+.shield {
+    width: 80px;
+    height: 80px;
+    background: #dc3545;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+    margin-bottom: 20px;
+}
+h1 { font-size: 24px; margin-bottom: 8px; }
+p { color: #666; margin-bottom: 24px; line-height: 1.6; }
+#url { color: #dc3545; font-weight: 600; }
+button {
+    padding: 10px 24px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
+button:hover { background: #1557b0; }
+</style>
+</head>
+<body>
+<div class="shield">!</div>
+<h1>Ресурс заблокирован</h1>
+<p>AnCore заблокировал запрос к:<br><span id="url"></span></p>
+<p>Этот ресурс был заблокирован встроенным блокировщиком рекламы<br>или защитой приватности.</p>
+<button onclick="history.back()">Вернуться назад</button>
+<script>
+document.getElementById('url').textContent = new URLSearchParams(window.location.search).get('url') || 'неизвестно';
+</script>
+</body>
+</html>

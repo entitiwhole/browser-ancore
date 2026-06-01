@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>История - AnCore Browser</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0F0F0F;color:#E5E2E1;font:13px/1.5 'Segoe UI',sans-serif;padding:20px;max-width:800px;margin:0 auto}
+h1{font-size:18px;margin-bottom:16px;color:#E5E2E1;font-weight:600}
+.entry{display:flex;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;gap:8px}
+.entry:hover{background:#2A2A2A}
+.entry .url{flex:1;color:#7C4DFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.entry .title{font-size:13px;color:#E5E2E1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .time{font-size:11px;color:#666;flex-shrink:0}
+.empty{color:#666;text-align:center;margin-top:60px;font-size:14px}
+#clear{background:#2A2A2A;border:none;color:#FF5252;padding:6px 14px;border-radius:6px;cursor:pointer;font:12px 'Segoe UI',sans-serif;margin-bottom:16px;float:right}
+#clear:hover{background:#3a1a1a}
+</style>
+</head>
+<body>
+<h1>История просмотров</h1>
+<button id="clear" onclick="post('clearHistory')">Очистить историю</button>
+<div id="list"></div>
+<script>
+function post(cmd,val){
+  var s = val !== undefined ? cmd+':'+val : cmd;
+  window.chrome.webview.postMessage(s);
+}
+function esc(t){ return String(t).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
+window.chrome.webview.addEventListener('message',function(e){
+  try {
+    var d = JSON.parse(e.data);
+    if(d.type==='history'){
+      var c = document.getElementById('list');
+      c.innerHTML = '';
+      if(!d.entries||d.entries.length===0){
+        c.innerHTML = '<div class="empty">История пуста</div>';
+        return;
+      }
+      for(var i=0;i<d.entries.length;i++){
+        var e = d.entries[i];
+        var el = document.createElement('div');
+        el.className = 'entry';
+        el.innerHTML = '<div><div class="title">'+esc(e.title||'Без названия')+'</div><div class="url">'+esc(e.url)+'</div></div><div class="time">'+esc(e.time||'')+'</div>';
+        el.onclick = function(u){ return function(){ post('nav',u); }; }(e.url);
+        c.appendChild(el);
+      }
+    }
+  } catch(x){}
+});
+post('getHistory');
+</script>
+</body>
+</html>
