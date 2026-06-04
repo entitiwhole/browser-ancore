@@ -1,0 +1,42 @@
+# Build and deploy outputs
+/build/
+/deploy/
+/out/
+*.exe
+!installer/**/*.iss
+
+# WebView2 user profile (created at runtime next to exe)
+**/*.WebView2/
+
+# Installer artifacts (rebuilt locally)
+/installer/staging/
+/installer/output/
+/installer/redist/
+
+# Large third-party trees (not part of AnCore sources)
+/chromium-main/
+/chromium-main.zip
+/qt-everywhere-src-*/
+/Qt6.*/
+/cmake/
+/cmake-*/
+
+# Logs and IDE
+aqtinstall.log
+*.log
+.vs/
+.vscode/
+*.user
+*.suo
+*.VC.db
+*.opendb
+
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archives / temp
+*.zip
+*.7z
+*.tmp

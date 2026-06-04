@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Tab</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Segoe UI',-apple-system,Arial,sans-serif;
+  background:#0F0F0F;color:#E5E2E1;
+  display:flex;flex-direction:column;align-items:center;
+  padding:72px 20px 40px;min-height:100vh;
+}
+.logo{font-size:36px;font-weight:700;margin-bottom:8px;letter-spacing:2px}
+.logo span{color:#7C4DFF}
+.tagline{color:#A0A0A0;font-size:14px;margin-bottom:36px}
+.search-container{width:100%;max-width:560px}
+.search-box{
+  display:flex;background:#2A2A2A;border:1px solid #333;border-radius:12px;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+}
+.search-box:focus-within{border-color:#7C4DFF;box-shadow:0 0 0 2px rgba(124,77,255,.2)}
+.search-box input{
+  flex:1;border:none;outline:none;padding:14px 18px;font-size:15px;font-family:inherit;
+  background:transparent;color:#E5E2E1;
+}
+.search-box input::placeholder{color:#666}
+.search-box button{
+  background:none;border:none;padding:0 18px;cursor:pointer;color:#7C4DFF;font-size:18px;opacity:.8;
+}
+.search-box button:hover{opacity:1}
+.section-title{
+  width:100%;max-width:560px;margin-top:32px;margin-bottom:12px;font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:600;
+}
+.widgets-row{margin-top:32px}
+.widgets-row,.topsites{
+  display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:560px;width:100%;
+}
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;
+  z-index:100;padding:16px;
+}
+.modal-overlay.open{display:flex}
+.modal-box{
+  width:100%;max-width:440px;max-height:min(520px,85vh);background:#1A1A1A;border:1px solid #333;
+  border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #2A2A2A;
+  font-size:14px;font-weight:600;
+}
+.modal-head button{
+  background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;
+}
+.modal-head button:hover{color:#E5E2E1}
+.modal-search{padding:12px 16px 8px}
+.modal-search input{
+  width:100%;border:1px solid #333;border-radius:10px;background:#0F0F0F;color:#E5E2E1;
+  padding:10px 12px;font-size:14px;font-family:inherit;outline:none;
+}
+.modal-search input:focus{border-color:#7C4DFF}
+.pick-list{flex:1;overflow-y:auto;padding:4px 8px 8px;min-height:120px}
+.pick-item{
+  display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;cursor:pointer;
+  border:1px solid transparent;
+}
+.pick-item:hover,.pick-item.selected{background:#252525;border-color:#333}
+.pick-item .pi-icon{
+  width:36px;height:36px;border-radius:8px;background:#2A2A2A;color:#7C4DFF;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;
+  overflow:hidden;
+}
+.pick-item .pi-text{flex:1;min-width:0}
+.pick-item .pi-title{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-item .pi-url{font-size:11px;color:#666;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-empty{padding:16px;text-align:center;color:#666;font-size:13px}
+.modal-manual{
+  padding:10px 16px 14px;border-top:1px solid #2A2A2A;display:flex;flex-direction:column;gap:8px;
+}
+.modal-manual label{font-size:11px;color:#666}
+.modal-manual .row{display:flex;gap:8px}
+.modal-manual input{
+  flex:1;border:1px solid #333;border-radius:10px;background:#0F0F0F;color:#E5E2E1;
+  padding:9px 11px;font-size:13px;font-family:inherit;outline:none;
+}
+.modal-manual input:focus{border-color:#7C4DFF}
+.modal-manual button{
+  background:#7C4DFF;border:none;color:#fff;border-radius:10px;padding:9px 14px;
+  font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.modal-manual button:hover{filter:brightness(1.08)}
+.site-tile{
+  display:flex;flex-direction:column;align-items:center;text-decoration:none;color:#A0A0A0;
+  padding:12px 10px;border-radius:12px;min-width:88px;max-width:120px;flex:1 1 88px;
+  transition:background .15s;cursor:pointer;position:relative;border:1px solid transparent;
+  user-select:none;
+}
+.site-tile:hover{background:#1A1A1A;color:#E5E2E1}
+.site-tile.dragging{opacity:.45}
+.site-tile.drag-over{border-color:#7C4DFF;background:#1A1A1A}
+.site-tile .icon{
+  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;margin-bottom:6px;background:#2A2A2A;color:#7C4DFF;overflow:hidden;
+}
+.site-tile .icon img,.pick-item .pi-icon img{
+  width:40px;height:40px;object-fit:contain;display:block;
+}
+.site-tile .icon.icon-img,.pick-item .pi-icon.icon-img{font-size:0;color:transparent}
+.site-tile .label{font-size:11px;text-align:center;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;max-width:100%}
+.site-tile .host{font-size:10px;color:#666;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.site-tile .remove{
+  position:absolute;top:4px;right:6px;width:18px;height:18px;border-radius:50%;
+  background:#333;color:#aaa;font-size:12px;line-height:16px;text-align:center;
+  display:none;cursor:pointer;
+}
+.site-tile:hover .remove{display:block}
+.site-tile .remove:hover{background:#5a2020;color:#f88}
+.site-tile.add-tile .icon{color:#888;font-size:22px;font-weight:400}
+.site-tile.add-tile:hover .icon{color:#7C4DFF}
+.footer{position:fixed;bottom:16px;color:#444;font-size:11px}
+</style>
+</head>
+<body>
+<div class="logo">An<span>Core</span></div>
+<div class="tagline">Ваш браузер — ваши правила</div>
+<div class="search-container">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Поиск или адрес" autofocus spellcheck="false">
+    <button type="button" onclick="search()" title="Перейти">→</button>
+  </div>
+</div>
+<div class="widgets-row" id="widgets"></div>
+<div class="section-title" id="topsTitle" style="display:none">Частые сайты</div>
+<div class="topsites" id="topsites"></div>
+<div class="footer">AnCore Browser</div>
+<div class="modal-overlay" id="addModal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-labelledby="addModalTitle">
+    <div class="modal-head">
+      <span id="addModalTitle">Добавить сайт</span>
+      <button type="button" id="addModalClose" title="Закрыть">×</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="pickSearch" placeholder="Поиск в истории (youtube, gmail…)" spellcheck="false" autocomplete="off">
+    </div>
+    <div class="pick-list" id="pickList"></div>
+    <div class="modal-manual">
+      <label for="manualUrl">Или введите адрес вручную</label>
+      <div class="row">
+        <input type="text" id="manualUrl" placeholder="https://youtube.com" spellcheck="false">
+        <button type="button" id="manualAddBtn">Добавить</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var widgets=[];
+var historyPick=[];
+var dragFrom=-1;
+var pickSelected=null;
+
+function postCore(msg){
+  try{
+    if(window.__ancorePost){window.__ancorePost(msg);return;}
+    var w=window.chrome&&window.chrome.webview;
+    if(w) w.postMessage(msg);
+  }catch(x){}
+}
+function postNav(q){postCore('nav:'+q);}
+function search(){
+  var q=document.getElementById('searchInput').value.trim();
+  if(q) postNav(q);
+}
+document.getElementById('searchInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter') search();
+});
+
+function hostFromUrl(url){
+  try{var u=new URL(url);return u.hostname.replace(/^www\./,'');}catch(x){return '';}
+}
+function hostLabel(host){
+  if(!host) return '';
+  return host.length>18?host.slice(0,16)+'…':host;
+}
+function tileLetter(title,host){
+  var s=(title||host||'?').trim();
+  return s?s.charAt(0).toUpperCase():'?';
+}
+
+/* Не показываем мелкую иконку, растянутую на 40px — только достаточное разрешение */
+var MIN_TILE_ICON_PX=64;
+
+var HOST_ICON_HINTS={
+  'youtube.com':[
+    'https://icons.duckduckgo.com/ip3/youtube.com.ico',
+    'https://www.gstatic.com/youtube/img/branding/favicon/favicon_48x48.png'
+  ],
+  'youtu.be':[
+    'https://icons.duckduckgo.com/ip3/youtube.com.ico',
+    'https://www.gstatic.com/youtube/img/branding/favicon/favicon_48x48.png'
+  ],
+  'm.youtube.com':[
+    'https://icons.duckduckgo.com/ip3/youtube.com.ico',
+    'https://www.gstatic.com/youtube/img/branding/favicon/favicon_48x48.png'
+  ]
+};
+
+function hostIconHints(h){
+  if(!h) return [];
+  if(HOST_ICON_HINTS[h]) return HOST_ICON_HINTS[h].slice();
+  if(h.length>11&&h.slice(-11)==='.youtube.com') return HOST_ICON_HINTS['youtube.com'].slice();
+  return [];
+}
+
+function guessUrlIconSize(u){
+  var m=u.match(/(\d{2,4})x\1|favicon[_-]?(\d{2,4})|size=(\d{2,4})|sz=(\d{2,4})/i);
+  if(!m) return 0;
+  for(var i=1;i<m.length;i++) if(m[i]) return parseInt(m[i],10);
+  return 0;
+}
+
+function isLowResFaviconUrl(u){
+  if(!u) return true;
+  if(u.indexOf('file:')===0) return true;
+  var g=guessUrlIconSize(u);
+  if(g>0&&g<64) return true;
+  if(/favicon[_-]?16|favicon\.ico(\?|$)/i.test(u)) return true;
+  if(u.indexOf('gstatic.com/faviconV2')>=0&&u.indexOf('size=256')<0&&u.indexOf('size=128')<0) return true;
+  return false;
+}
+
+function faviconCandidates(url,host,siteFavicon){
+  var hi=[],lo=[],h=host||hostFromUrl(url);
+  var hints=hostIconHints(h);
+  for(var hi0=0;hi0<hints.length;hi0++) hi.push(hints[hi0]);
+  if(url){
+    try{
+      var o=new URL(url).origin;
+      hi.push(o+'/apple-touch-icon.png');
+      hi.push(o+'/apple-touch-icon-precomposed.png');
+      hi.push(o+'/favicon-512x512.png');
+      hi.push(o+'/favicon-192x192.png');
+      hi.push(o+'/favicon-180x180.png');
+      hi.push(o+'/favicon-96x96.png');
+      lo.push(o+'/favicon-48x48.png');
+      lo.push(o+'/favicon-32x32.png');
+      lo.push(o+'/favicon.ico');
+    }catch(x){}
+  }
+  if(h){
+    var pageUrl=(url&&url.indexOf('http')===0)?url:('https://'+h+'/');
+    hi.push('https://www.google.com/s2/favicons?domain='+encodeURIComponent(h)+'&sz=256');
+    hi.push('https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url='
+      +encodeURIComponent(pageUrl)+'&size=256');
+    hi.push('https://icons.duckduckgo.com/ip3/'+encodeURIComponent(h)+'.ico');
+    hi.push('https://'+h+'/apple-touch-icon.png');
+    hi.push('https://'+h+'/favicon-192x192.png');
+    lo.push('https://'+h+'/favicon-32x32.png');
+    lo.push('https://'+h+'/favicon.ico');
+  }
+  if(siteFavicon){
+    if(isLowResFaviconUrl(siteFavicon)) lo.push(siteFavicon);
+    else hi.push(siteFavicon);
+  }
+  function dedupe(arr){
+    var seen={},o=[];
+    for(var i=0;i<arr.length;i++){
+      if(arr[i]&&!seen[arr[i]]){seen[arr[i]]=1;o.push(arr[i]);}
+    }
+    return o;
+  }
+  hi=dedupe(hi).sort(function(a,b){return guessUrlIconSize(b)-guessUrlIconSize(a);});
+  lo=dedupe(lo).sort(function(a,b){return guessUrlIconSize(b)-guessUrlIconSize(a);});
+  return hi.concat(lo);
+}
+
+function setSiteIcon(el,url,host,title,siteFavicon){
+  if(!el) return;
+  el.innerHTML='';
+  el.classList.remove('icon-img');
+  var letter=function(){
+    el.classList.remove('icon-img');
+    el.textContent=tileLetter(title,host||hostFromUrl(url));
+  };
+  var candidates=faviconCandidates(url,host,siteFavicon);
+  if(!candidates.length){letter();return;}
+  var idx=0;
+  function show(img){
+    el.innerHTML='';
+    el.classList.add('icon-img');
+    el.appendChild(img);
+  }
+  function tryNext(){
+    if(idx>=candidates.length){
+      var h=host||hostFromUrl(url);
+      if(h){
+        var fallback='https://www.google.com/s2/favicons?domain='+encodeURIComponent(h)+'&sz=256';
+        if(candidates.indexOf(fallback)<0){
+          candidates.push(fallback);
+          tryNext();
+          return;
+        }
+      }
+      letter();
+      return;
+    }
+    var src=candidates[idx++];
+    var img=new Image();
+    img.alt='';
+    img.decoding='async';
+    img.referrerPolicy='no-referrer';
+    img.onload=function(){
+      var side=Math.min(img.naturalWidth||0,img.naturalHeight||0);
+      if(side>=MIN_TILE_ICON_PX) show(img);
+      else tryNext();
+    };
+    img.onerror=function(){tryNext();};
+    img.src=src;
+  }
+  tryNext();
+}
+
+function saveWidgets(){
+  postCore('saveNewTabWidgets'+JSON.stringify(widgets));
+}
+
+function normalizeUrl(raw){
+  var url=(raw||'').trim();
+  if(!url) return '';
+  if(!/^https?:\/\//i.test(url)) url='https://'+url;
+  return url;
+}
+function homepageUrl(raw){
+  var url=normalizeUrl(raw);
+  if(!url) return '';
+  try{
+    var u=new URL(url);
+    var host=u.hostname.replace(/^www\./i,'');
+    return u.protocol+'//'+host+'/';
+  }catch(x){return url;}
+}
+function widgetExists(url){
+  var home=homepageUrl(url);
+  for(var i=0;i<widgets.length;i++)
+    if(homepageUrl(widgets[i].url)===home) return true;
+  return false;
+}
+function commitWidget(url,title,favicon){
+  url=homepageUrl(url);
+  if(!url) return false;
+  if(widgetExists(url)) return false;
+  var host=hostFromUrl(url);
+  if(!title||title.indexOf('/')>=0) title=host;
+  widgets.push({title:(title||'').trim(),url:url,favicon:(favicon||'').trim()});
+  saveWidgets();
+  renderWidgets();
+  return true;
+}
+function closeAddModal(){
+  var m=document.getElementById('addModal');
+  if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}
+  pickSelected=null;
+}
+function openAddModal(){
+  pickSelected=null;
+  var search=document.getElementById('pickSearch');
+  var manual=document.getElementById('manualUrl');
+  if(search) search.value='';
+  if(manual) manual.value='';
+  renderPickList('');
+  var m=document.getElementById('addModal');
+  if(m){
+    m.classList.add('open');
+    m.setAttribute('aria-hidden','false');
+    if(search) search.focus();
+  }
+}
+function addWidget(){openAddModal();}
+function pickFilter(q){
+  q=(q||'').trim().toLowerCase();
+  if(!q) return historyPick.slice();
+  return historyPick.filter(function(it){
+    var t=(it.title||'').toLowerCase();
+    var h=(it.host||'').toLowerCase();
+    var u=(it.url||'').toLowerCase();
+    return t.indexOf(q)>=0||h.indexOf(q)>=0||u.indexOf(q)>=0;
+  });
+}
+function renderPickList(query){
+  var box=document.getElementById('pickList');
+  if(!box) return;
+  box.innerHTML='';
+  var list=pickFilter(query);
+  if(!historyPick.length){
+    var e=document.createElement('div');
+    e.className='pick-empty';
+    e.textContent='История пуста — введите адрес внизу';
+    box.appendChild(e);
+    return;
+  }
+  if(!list.length){
+    var e2=document.createElement('div');
+    e2.className='pick-empty';
+    e2.textContent='Ничего не найдено';
+    box.appendChild(e2);
+    return;
+  }
+  for(var i=0;i<list.length;i++){
+    (function(it){
+      var row=document.createElement('div');
+      row.className='pick-item';
+      if(pickSelected&&pickSelected.url===it.url) row.classList.add('selected');
+      var icon=document.createElement('div');
+      icon.className='pi-icon';
+      setSiteIcon(icon,it.url,it.host,it.title,it.favicon);
+      var text=document.createElement('div');
+      text.className='pi-text';
+      var t1=document.createElement('div');
+      t1.className='pi-title';
+      t1.textContent=it.title||it.host||'Сайт';
+      var t2=document.createElement('div');
+      t2.className='pi-url';
+      t2.textContent=it.url||'';
+      text.appendChild(t1);
+      text.appendChild(t2);
+      row.appendChild(icon);
+      row.appendChild(text);
+      function choose(){
+        if(commitWidget(it.url,it.title,it.favicon)) closeAddModal();
+      }
+      row.addEventListener('click',choose);
+      box.appendChild(row);
+    })(list[i]);
+  }
+}
+function addFromManual(){
+  var url=normalizeUrl(document.getElementById('manualUrl').value);
+  if(!url) return;
+  var host=hostFromUrl(url);
+  if(commitWidget(url,hostFromUrl(url),'')) closeAddModal();
+}
+
+function removeWidget(i){
+  widgets.splice(i,1);
+  saveWidgets();
+  renderWidgets();
+}
+
+function reorderWidgets(from,to){
+  if(from===to||from<0||to<0||from>=widgets.length||to>=widgets.length) return;
+  var item=widgets.splice(from,1)[0];
+  widgets.splice(to,0,item);
+  saveWidgets();
+  renderWidgets();
+}
+
+function renderWidgets(){
+  var box=document.getElementById('widgets');
+  if(!box) return;
+  box.innerHTML='';
+  for(var i=0;i<widgets.length;i++){
+    (function(idx,it){
+      var host=hostFromUrl(it.url);
+      var tile=document.createElement('div');
+      tile.className='site-tile';
+      tile.draggable=true;
+      tile.dataset.idx=String(idx);
+      tile.innerHTML='<span class="remove" title="Удалить">×</span>'
+        +'<div class="icon"></div>'
+        +'<span class="label">'+(it.title||host||'Сайт')+'</span>'
+        +'<span class="host">'+hostLabel(host)+'</span>';
+      setSiteIcon(tile.querySelector('.icon'),it.url,host,it.title,it.favicon);
+      tile.querySelector('.remove').addEventListener('click',function(e){
+        e.stopPropagation();
+        removeWidget(idx);
+      });
+      tile.addEventListener('click',function(e){
+        if(e.target.classList.contains('remove')) return;
+        postNav(it.url);
+      });
+      tile.addEventListener('dragstart',function(e){
+        dragFrom=idx;
+        tile.classList.add('dragging');
+        e.dataTransfer.effectAllowed='move';
+        try{e.dataTransfer.setData('text/plain',String(idx));}catch(x){}
+      });
+      tile.addEventListener('dragend',function(){
+        tile.classList.remove('dragging');
+        dragFrom=-1;
+        var all=box.querySelectorAll('.site-tile');
+        for(var j=0;j<all.length;j++) all[j].classList.remove('drag-over');
+      });
+      tile.addEventListener('dragover',function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect='move';
+        tile.classList.add('drag-over');
+      });
+      tile.addEventListener('dragleave',function(){tile.classList.remove('drag-over');});
+      tile.addEventListener('drop',function(e){
+        e.preventDefault();
+        tile.classList.remove('drag-over');
+        var toIdx=idx;
+        if(dragFrom>=0) reorderWidgets(dragFrom,toIdx);
+      });
+      box.appendChild(tile);
+    })(i,widgets[i]);
+  }
+  var add=document.createElement('div');
+  add.className='site-tile add-tile';
+  add.title='Добавить из истории или по адресу';
+  add.innerHTML='<div class="icon">+</div><span class="label">Добавить</span>';
+  add.addEventListener('click',addWidget);
+  box.appendChild(add);
+}
+
+function renderTopSites(list){
+  var box=document.getElementById('topsites');
+  var title=document.getElementById('topsTitle');
+  if(!box) return;
+  box.innerHTML='';
+  if(!list||!list.length){
+    title.style.display='none';
+    return;
+  }
+  title.style.display='block';
+  for(var i=0;i<list.length;i++){
+    var it=list[i];
+    var a=document.createElement('a');
+    a.className='site-tile';
+    a.href='#';
+    a.innerHTML='<div class="icon"></div>'
+      +'<span class="label">'+(it.title||it.host||'Сайт')+'</span>'
+      +'<span class="host">'+hostLabel(it.host||'')+'</span>';
+    setSiteIcon(a.querySelector('.icon'),it.url,it.host||hostFromUrl(it.url),it.title,it.favicon);
+    (function(url){
+      a.addEventListener('click',function(e){e.preventDefault();postNav(url);});
+    })(it.url);
+    box.appendChild(a);
+  }
+}
+
+function applyNewTabData(data){
+  if(!data) return;
+  widgets=(data.widgets||[]).map(function(w){
+    return {
+      title:w.title||hostFromUrl(w.url),
+      url:homepageUrl(w.url),
+      favicon:w.favicon||''
+    };
+  });
+  historyPick=(data.historyPick||[]).map(function(it){
+    return {
+      title:it.host||it.title||hostFromUrl(it.url),
+      url:homepageUrl(it.url),
+      host:it.host||hostFromUrl(it.url),
+      favicon:it.favicon||''
+    };
+  });
+  renderWidgets();
+  renderTopSites((data.topSites||[]).map(function(it){
+    return {
+      title:it.host||it.title||hostFromUrl(it.url),
+      url:homepageUrl(it.url),
+      host:it.host||hostFromUrl(it.url),
+      favicon:it.favicon||''
+    };
+  }));
+}
+
+(function setupAddModal(){
+  var closeBtn=document.getElementById('addModalClose');
+  var overlay=document.getElementById('addModal');
+  var search=document.getElementById('pickSearch');
+  var manualBtn=document.getElementById('manualAddBtn');
+  var manualUrl=document.getElementById('manualUrl');
+  if(closeBtn) closeBtn.addEventListener('click',closeAddModal);
+  if(overlay) overlay.addEventListener('click',function(e){
+    if(e.target===overlay) closeAddModal();
+  });
+  if(search) search.addEventListener('input',function(){
+    renderPickList(search.value);
+  });
+  if(search) search.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      var list=pickFilter(search.value);
+      if(list.length&&commitWidget(list[0].url,list[0].title,list[0].favicon)) closeAddModal();
+    }
+    if(e.key==='Escape') closeAddModal();
+  });
+  if(manualBtn) manualBtn.addEventListener('click',addFromManual);
+  if(manualUrl) manualUrl.addEventListener('keydown',function(e){
+    if(e.key==='Enter') addFromManual();
+    if(e.key==='Escape') closeAddModal();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&overlay&&overlay.classList.contains('open')) closeAddModal();
+  });
+})();
+
+function onHostMessage(d){
+  if(typeof d!=='string') return;
+  if(d.indexOf('__ancore__newTabData')===0||d.indexOf('__ancore__widgetsSaved')===0){
+    var off=d.indexOf('__ancore__widgetsSaved')===0?22:20;
+    try{applyNewTabData(JSON.parse(d.substring(off)));}catch(x){}
+    return;
+  }
+  if(d.indexOf('__ancore__topSites')===0){
+    try{renderTopSites(JSON.parse(d.substring(18)));}catch(x){}
+  }
+}
+function bindHostMessages(){
+  var w=window.chrome&&window.chrome.webview;
+  if(w&&w.addEventListener){
+    w.addEventListener('message',function(e){onHostMessage(e.data);});
+    return true;
+  }
+  return false;
+}
+(function initNewTab(){
+  if(!bindHostMessages()){
+    var n=0,t=setInterval(function(){
+      if(bindHostMessages()||++n>40) clearInterval(t);
+    },50);
+  }
+  postCore('getNewTabData');
+  renderWidgets();
+})();
+</script>
+</body>
+</html>
